@@ -13,16 +13,35 @@ class FileDownloader(threading.Thread):
         self.filepath = os.path.join("Server", filename)
 
     def run(self):
-        if os.path.exists(self.filename):
-            with open(self.filename, 'rb') as file:
-                data = file.read()
-                self.client_socket.sendall(data)
-            print(f"Sent file {self.filename} to client.")
-        else:
-            self.client_socket.sendall(b"File not found.")
-            print(f"File {self.filename} not found.")
-
-        self.client_socket.close()
+        if not os.path.exists(self.filepath):
+            self.main_socket.sendto(f"ERR {self.filename} NOT_FOUND".encode(), self.client_addr)
+            return
+        transfer_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        transfer_socket.bind(('0.0.0.0', self.port))
+        
+        filesize = os.path.getsize(self.filepath)
+        response = f"OK {self.filename} SIZE {filesize} PORT {self.port}"
+        self.main_socket.sendto(response.encode(), self.client_addr)
+        
+        with open(self.filepath, 'rb') as file:
+            while True:
+                data, addr = transfer_socket.recvfrom(2048)
+                request = data.decode().split()
+                
+                if request[0] == "FILE" and request[2] == "GET":
+                    start = int(request[4])
+                    end = int(request[6])
+                    file.seek(start)
+                    chunk = file.read(end - start + 1)
+                    encoded = base64.b64encode(chunk).decode()
+                    response = f"FILE {self.filename} OK START {start} END {end} DATA {encoded}"
+                    transfer_socket.sendto(response.encode(), addr)
+                
+                elif request[0] == "FILE" and request[2] == "CLOSE":
+                    transfer_socket.sendto(f"FILE {self.filename} CLOSE_OK".encode(), addr)
+                    break
+        
+        transfer_socket.close()
 def start_server(port):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(('0.0.0.0', port))
