@@ -8,14 +8,25 @@ class Client:
         self.filelist = filelist
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     def send_with_retry(self, message):
-        retries = 3
-        for attempt in range(retries):
+        max_retries = 5
+        if addr is None:
+            addr = (self.server_host, self.server_port)
+        
+        retries = 0
+        current_timeout = 2
+        
+        while retries < max_retries:
             try:
-                self.socket.sendall(message.encode())
-                return True
-            except socket.error as e:
-                print(f"Socket error: {e}. Retrying {attempt + 1}/{retries}...")
-        return False
+                self.socket.sendto(message.encode(), addr)
+                self.socket.settimeout(current_timeout)
+                data, _ = self.socket.recvfrom(65536)
+                return data.decode()
+            except socket.timeout:
+                retries += 1
+                print(f" Timeout, retrying {retries}/{max_retries}...")
+                current_timeout *= 2
+        
+        raise Exception("Failed to send message after retries.")
     def download_file(self, filename):
         print(f"\nDownloading: {filename}")
         try:
@@ -50,7 +61,7 @@ class Client:
                                 chunk = base64.b64decode(encoded.encode())
                                 f.write(chunk)
                                 received += len(chunk)
-                                print(f"\r进度: {received}/{filesize} {'*' * (received//1000 + 1)}", end='')
+                                print(f"\rDownloading : {received}/{filesize} {'*' * (received//1000 + 1)}", end='')
                                 break
                                 
                         except Exception as e:
