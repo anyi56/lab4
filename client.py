@@ -6,7 +6,7 @@ class Client:
         self.server_host = server_host
         self.server_port = server_port
         self.filelist = filelist
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     def send_with_retry(self, message):
         max_retries = 5
         if addr is None:
@@ -98,7 +98,12 @@ if __name__ == "__main__":
     
     server_host = sys.argv[1]
     server_port = int(sys.argv[2])
-    filelist = sys.argv[3:] if len(sys.argv) > 3 else []
-
+    filelist_file = sys.argv[3]
+    try:
+        with open(filelist_file, 'r') as f:
+            filelist = [line.strip() for line in f if line.strip()]
+    except FileNotFoundError:
+        print(f"Error: File list file '{filelist_file}' not found.")
+        sys.exit(1)
     client = Client(server_host, server_port, filelist)
     client.start()

@@ -43,7 +43,7 @@ class FileDownloader(threading.Thread):
         
         transfer_socket.close()
 def start_server(port):
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     server_socket.bind(('0.0.0.0', port))
     print(f"Server is listening on port {port}")
     while True:
