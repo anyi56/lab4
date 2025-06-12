@@ -45,7 +45,6 @@ class FileDownloader(threading.Thread):
 def start_server(port):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(('0.0.0.0', port))
-    server_socket.listen(5)
     print(f"Server is listening on port {port}")
     while True:
         data, addr = server_socket.recvfrom(1024)
@@ -53,7 +52,7 @@ def start_server(port):
         if message[0] == "DOWNLOAD":
             filename = message[1]            
             print(f"Accepted connection from {addr}")
-            FileDownloader(server_socket, filename,addr).start()
+            FileDownloader(filename,addr,server_socket).start()
 if __name__ == "__main__":
     import sys
     if len(sys.argv) != 2:
