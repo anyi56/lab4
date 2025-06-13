@@ -2,10 +2,10 @@ import socket
 import os
 import base64
 class Client:
-    def __init__(self, server_host,server_port, filelist):
+    def __init__(self, server_host,server_port, filelist_file):
         self.server_host = server_host
         self.server_port = server_port
-        self.filelist = filelist
+        self.filelist_file = filelist_file
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     def send_with_retry(self, message, addr=None):
         max_retries = 5
@@ -79,7 +79,7 @@ class Client:
     
     def start(self):
         try:
-            with open(self.filelist, 'r') as f:
+            with open(self.filelist_file, 'r') as f:
                 files = [line.strip() for line in f if line.strip()]
             
             for filename in files:
@@ -91,18 +91,13 @@ class Client:
             self.socket.close()
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) < 4:
-        print("Usage: python client.py <server_host> <server_port> [file1 file2 ...]")
+    if len(sys.argv) != 4:
+        print("Usage: python client.py <server_host> <server_port> <filelist_file>")
         sys.exit(1)
-    
+
     server_host = sys.argv[1]
     server_port = int(sys.argv[2])
-    filelist_file = sys.argv[3]
-    try:
-        with open(filelist_file, 'r') as f:
-            filelist = [line.strip() for line in f if line.strip()]
-    except FileNotFoundError:
-        print(f"Error: File list file '{filelist_file}' not found.")
-        sys.exit(1)
-    client = Client(server_host, server_port, filelist)
+    filelist_filename = sys.argv[3]
+
+    client = Client(server_host, server_port, filelist_filename) 
     client.start()
